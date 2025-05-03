@@ -14,7 +14,7 @@
     <link rel="icon" type="image/png" href="https://i.postimg.cc/GhG5z454/IMG-3129.png">
 
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovруса
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,6 +23,14 @@
 
     <!-- XLSX.js for Excel Parsing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <!-- AOS for Animations -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+    <!-- Toastify for Notifications -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
     <style>
         /* Reset Styles */
@@ -514,6 +522,9 @@
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             position: relative;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s ease forwards;
         }
 
         body.dark-mode .fatwa-card {
@@ -544,6 +555,17 @@
             font-size: 1.1rem;
             color: #475569;
             margin-bottom: 15px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: all 0.3s ease;
+        }
+
+        .fatwa-card .fatwa-answer.expanded {
+            -webkit-line-clamp: unset;
+            overflow: visible;
         }
 
         body.dark-mode .fatwa-card .fatwa-answer {
@@ -566,6 +588,35 @@
             display: flex;
             gap: 10px;
             justify-content: center;
+        }
+
+        .read-more-btn {
+            background: none;
+            border: none;
+            color: #b45309;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            transition: color 0.2s ease;
+        }
+
+        .read-more-btn:hover {
+            color: #92400e;
+        }
+
+        body.dark-mode .read-more-btn {
+            color: #60a5fa;
+        }
+
+        body.dark-mode .read-more-btn:hover {
+            color: #3b82f6;
+        }
+
+        .read-more-btn i {
+            font-size: 0.9rem;
         }
 
         .share-btn,
@@ -737,6 +788,68 @@
             background: #3b82f6;
         }
 
+        /* Progress Bar */
+        .progress-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #e2e8f0;
+            z-index: 1001;
+        }
+
+        .progress-bar {
+            width: 0;
+            height: 100%;
+            background: linear-gradient(135deg, #b45309, #92400e);
+            transition: width 0.3s ease;
+        }
+
+        body.dark-mode .progress-container {
+            background: #1e293b;
+        }
+
+        body.dark-mode .progress-bar {
+            background: linear-gradient(135deg, #3b82f6, #1e40af);
+        }
+
+        /* Back to Top Button */
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #b45309;
+            color: #ffffff;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            transition: background 0.2s ease;
+        }
+
+        .back-to-top.show {
+            display: flex;
+        }
+
+        .back-to-top:hover {
+            background: #92400e;
+        }
+
+        body.dark-mode .back-to-top {
+            background: #3b82f6;
+        }
+
+        body.dark-mode .back-to-top:hover {
+            background: #1e40af;
+        }
+
         /* Footer */
         footer {
             background: #1e3a8a;
@@ -767,6 +880,10 @@
 
         footer a:hover {
             color: #ffffff;
+        }
+
+        footer a i {
+            font-size: 1.2rem;
         }
 
         /* Responsive Design */
@@ -880,6 +997,13 @@
                 padding: 12px;
             }
         }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 
@@ -897,6 +1021,11 @@
             <i class="fas fa-moon"></i>
         </button>
     </nav>
+
+    <!-- Progress Bar -->
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
 
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
@@ -945,20 +1074,24 @@
         </div>
     </div>
 
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" title="الرجوع إلى الأعلى">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
     <!-- Footer -->
-    <footer>
-        <p>جميع الحقوق محفوظة © 2025 المحراب</p>
-        <div>
-            <a href="#">سياسة الخصوصية</a>
-            <a href="#">اتصل بنا</a>
-            <a href="#">عن المحراب</a>
-        </div>
-    </footer>
+    <footer></footer>
 
     <!-- Notification -->
     <div class="notification" id="notification"></div>
 
     <script>
+        // Initialize AOS
+        AOS.init({
+            duration: 600,
+            once: true,
+        });
+
         // Toggle Theme
         function toggleTheme() {
             const body = document.body;
@@ -978,14 +1111,16 @@
             }
         }
 
-        // Show Notification
-        function showNotification(message) {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.classList.add('show');
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
+        // Show Notification with Toastify
+        function showNotification(message, type = 'success') {
+            Toastify({
+                text: message,
+                duration: 3000,
+                gravity: 'bottom',
+                position: 'right',
+                backgroundColor: type === 'success' ? '#b45309' : '#b91c1c',
+                stopOnFocus: true,
+            }).showToast();
         }
 
         // Show Error Message
@@ -1048,16 +1183,19 @@
         async function loadExcelData(fileUrl) {
             try {
                 showLoadingMessage();
+                updateProgressBar(10);
                 const response = await fetch(fileUrl, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                     }
                 });
+                updateProgressBar(50);
                 if (!response.ok) {
                     throw new Error(`فشل جلب الملف: ${response.status} ${response.statusText}`);
                 }
                 const arrayBuffer = await response.arrayBuffer();
+                updateProgressBar(80);
                 const workbook = XLSX.read(arrayBuffer, { type: 'array' });
                 const fatwaData = {};
 
@@ -1069,18 +1207,27 @@
                         answer: row[2] || '',
                         details: row[3] || '',
                         source: row[4] || ''
-                    })).filter(fatwa => fatwa.question); // Filter out empty rows
+                    })).filter(fatwa => fatwa.question);
                 });
 
+                updateProgressBar(100);
+                setTimeout(() => updateProgressBar(0), 500);
                 hideLoadingMessage();
                 return fatwaData;
             } catch (error) {
                 console.error('Error loading Excel:', error);
                 hideLoadingMessage();
+                updateProgressBar(0);
                 showErrorMessage('فشل تحميل بيانات الفتاوى. تأكد من رابط ملف Excel أو اتصال الإنترنت.');
-                showNotification('خطأ في تحميل بيانات الفتاوى');
+                showNotification('خطأ في تحميل بيانات الفتاوى', 'error');
                 return {};
             }
+        }
+
+        // Update Progress Bar
+        function updateProgressBar(progress) {
+            const progressBar = document.getElementById('progressBar');
+            progressBar.style.width = `${progress}%`;
         }
 
         // Display Navigation Buttons
@@ -1107,7 +1254,7 @@
             fatwaSections.innerHTML = '';
             let totalResults = 0;
 
-            Object.keys(data).forEach(sheetName => {
+            Object.keys(data).forEach((sheetName, index) => {
                 const fatwas = data[sheetName];
                 const filteredFatwas = searchQuery
                     ? fatwas.filter(fatwa =>
@@ -1124,6 +1271,8 @@
                     const section = document.createElement('section');
                     section.classList.add('fatwa-section');
                     section.id = `fatwa-section-${sheetName}`;
+                    section.setAttribute('data-aos', 'fade-up');
+                    section.setAttribute('data-aos-delay', index * 100);
                     section.innerHTML = `
                         <h1>${sheetName}</h1>
                         <div class="fatwa-grid" id="fatwaGrid-${sheetName}"></div>
@@ -1131,12 +1280,17 @@
                     fatwaSections.appendChild(section);
 
                     const fatwaGrid = document.getElementById(`fatwaGrid-${sheetName}`);
-                    filteredFatwas.forEach(fatwa => {
+                    filteredFatwas.forEach((fatwa, idx) => {
                         const card = document.createElement('div');
                         card.classList.add('fatwa-card');
+                        card.setAttribute('data-aos', 'fade-up');
+                        card.setAttribute('data-aos-delay', idx * 50);
                         card.innerHTML = `
                             <div class="fatwa-question">${fatwa.question}</div>
-                            <div class="fatwa-answer">${fatwa.answer}</div>
+                            <div class="fatwa-answer" id="fatwa-answer-${sheetName}-${idx}">${fatwa.answer}</div>
+                            <button class="read-more-btn" onclick="toggleReadMore(this, '${sheetName}-${idx}')">
+                                <i class="fas fa-ellipsis-h"></i> قراءة المزيد
+                            </button>
                             <span class="fatwa-source">المصدر: ${fatwa.source}</span>
                             <div class="fatwa-buttons">
                                 <button class="share-btn" title="مشاركة الفتوى" onclick="shareFatwa(this)">
@@ -1157,15 +1311,23 @@
                 ? `تم العثور على ${totalResults} نتيجة`
                 : '';
 
-            // Display navigation buttons
             displayNavButtons(Object.keys(data));
 
-            // Show/hide error message
             if (totalResults === 0 && !searchQuery) {
                 showErrorMessage('لم يتم العثور على فتاوى. تأكد من صحة ملف Excel.');
             } else {
                 hideErrorMessage();
             }
+        }
+
+        // Toggle Read More
+        function toggleReadMore(button, id) {
+            const answer = document.getElementById(`fatwa-answer-${id}`);
+            const isExpanded = answer.classList.contains('expanded');
+            answer.classList.toggle('expanded');
+            button.innerHTML = isExpanded
+                ? `<i class="fas fa-ellipsis-h"></i> قراءة المزيد`
+                : `<i class="fas fa-chevron-up"></i> إخفاء`;
         }
 
         // Share Fatwa
@@ -1183,13 +1345,13 @@
                 }).then(() => {
                     showNotification('تمت المشاركة بنجاح!');
                 }).catch(() => {
-                    showNotification('حدث خطأ أثناء المشاركة');
+                    showNotification('حدث خطأ أثناء المشاركة', 'error');
                 });
             } else {
                 navigator.clipboard.writeText(shareText).then(() => {
                     showNotification('تم نسخ الفتوى إلى الحافظة!');
                 }).catch(() => {
-                    showNotification('حدث خطأ أثناء النسخ');
+                    showNotification('حدث خطأ أثناء النسخ', 'error');
                 });
             }
         }
@@ -1206,11 +1368,39 @@
             }, 300);
         });
 
+        // Back to Top Button
+        const backToTopButton = document.getElementById('backToTop');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                backToTopButton.classList.add('show');
+            } else {
+                backToTopButton.classList.remove('show');
+            }
+        });
+
+        backToTopButton.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // Update Footer Dynamically
+        function updateFooter() {
+            const footer = document.querySelector('footer');
+            footer.innerHTML = `
+                <p>جميع الحقوق محفوظة © ${new Date().getFullYear()} المحراب</p>
+                <div>
+                    <a href="#" title="سياسة الخصوصية"><i class="fas fa-shield-alt"></i> سياسة الخصوصية</a>
+                    <a href="#" title="اتصل بنا"><i class="fas fa-envelope"></i> اتصل بنا</a>
+                    <a href="#" title="عن المحراب"><i class="fas fa-info-circle"></i> عن المحراب</a>
+                    <a href="https://twitter.com" target="_blank" title="تويتر"><i class="fab fa-twitter"></i></a>
+                    <a href="https://facebook.com" target="_blank" title="فيسبوك"><i class="fab fa-facebook-f"></i></a>
+                </div>
+            `;
+        }
+
         // Initialize on Page Load
         window.addEventListener('load', () => {
             loadTheme();
-
-            // Excel file URL (Google Sheets export link)
+            updateFooter();
             const excelUrl = 'https://docs.google.com/spreadsheets/d/1fQzzcSdUvYs5A4yKqgVJe_UjjG5i2yGc/export?format=xlsx';
             loadExcelData(excelUrl).then(data => {
                 window.fatwaData = data;
