@@ -14,7 +14,7 @@
     <link rel="icon" type="image/png" href="https://i.postimg.cc/GhG5z454/IMG-3129.png">
 
     <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovруса
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -545,6 +545,17 @@
             font-weight: 700;
             color: #1e3a8a;
             margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: all 0.3s ease;
+        }
+
+        .fatwa-card .fatwa-question.expanded {
+            -webkit-line-clamp: unset;
+            overflow: visible;
         }
 
         body.dark-mode .fatwa-card .fatwa-question {
@@ -1286,22 +1297,42 @@
                         card.setAttribute('data-aos', 'fade-up');
                         card.setAttribute('data-aos-delay', idx * 50);
                         card.innerHTML = `
-                            <div class="fatwa-question">${fatwa.question}</div>
+                            <div class="fatwa-question" id="fatwa-question-${sheetName}-${idx}">${fatwa.question}</div>
+                            <button class="read-more-btn question-read-more" id="question-read-more-${sheetName}-${idx}" onclick="toggleReadMore(this, '${sheetName}-${idx}', 'question')">
+                                <i class="fas fa-ellipsis-h"></i> عرض السؤال كاملاً
+                            </button>
                             <div class="fatwa-answer" id="fatwa-answer-${sheetName}-${idx}">${fatwa.answer}</div>
-                            <button class="read-more-btn" onclick="toggleReadMore(this, '${sheetName}-${idx}')">
+                            <button class="read-more-btn answer-read-more" id="answer-read-more-${sheetName}-${idx}" onclick="toggleReadMore(this, '${sheetName}-${idx}', 'answer')">
                                 <i class="fas fa-ellipsis-h"></i> قراءة المزيد
                             </button>
-                            <span class="fatwa-source">المصدر: ${fatwa.source}</span>
+                            <span class="fatwa-source">${fatwa.source ? `المصدر: ${fatwa.source}` : 'لا يوجد مزيد من المعلومات'}</span>
                             <div class="fatwa-buttons">
                                 <button class="share-btn" title="مشاركة الفتوى" onclick="shareFatwa(this)">
                                     <i class="fas fa-share-alt"></i> مشاركة
                                 </button>
-                                <button class="details-btn" title="تفاصيل الفتوى" onclick="showFatwaDetailsModal('${fatwa.question}', '${fatwa.details}')">
-                                    <i class="fas fa-info-circle"></i> المزيد
-                                </button>
+                                ${fatwa.details ? `
+                                    <button class="details-btn" title="تفاصيل الفتوى" onclick="showFatwaDetailsModal('${fatwa.question}', '${fatwa.details}')">
+                                        <i class="fas fa-info-circle"></i> المزيد
+                                    </button>
+                                ` : ''}
                             </div>
                         `;
                         fatwaGrid.appendChild(card);
+
+                        // التحقق من ارتفاع السؤال والجواب لإخفاء الأزرار إذا لزم الأمر
+                        setTimeout(() => {
+                            const questionElement = document.getElementById(`fatwa-question-${sheetName}-${idx}`);
+                            const answerElement = document.getElementById(`fatwa-answer-${sheetName}-${idx}`);
+                            const questionBtn = document.getElementById(`question-read-more-${sheetName}-${idx}`);
+                            const answerBtn = document.getElementById(`answer-read-more-${sheetName}-${idx}`);
+
+                            if (questionElement.scrollHeight <= questionElement.clientHeight) {
+                                questionBtn.style.display = 'none';
+                            }
+                            if (answerElement.scrollHeight <= answerElement.clientHeight) {
+                                answerBtn.style.display = 'none';
+                            }
+                        }, 0); // تأخير بسيط لضمان تحميل العناصر
                     });
                 }
             });
@@ -1321,12 +1352,12 @@
         }
 
         // Toggle Read More
-        function toggleReadMore(button, id) {
-            const answer = document.getElementById(`fatwa-answer-${id}`);
-            const isExpanded = answer.classList.contains('expanded');
-            answer.classList.toggle('expanded');
+        function toggleReadMore(button, id, type) {
+            const element = document.getElementById(`fatwa-${type}-${id}`);
+            const isExpanded = element.classList.contains('expanded');
+            element.classList.toggle('expanded');
             button.innerHTML = isExpanded
-                ? `<i class="fas fa-ellipsis-h"></i> قراءة المزيد`
+                ? `<i class="fas fa-ellipsis-h"></i> ${type === 'question' ? 'عرض السؤال كاملاً' : 'قراءة المزيد'}`
                 : `<i class="fas fa-chevron-up"></i> إخفاء`;
         }
 
